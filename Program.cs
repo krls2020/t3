@@ -18,7 +18,16 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await db.Database.EnsureCreatedAsync();
+    await db.Database.ExecuteSqlRawAsync(@"
+        CREATE TABLE IF NOT EXISTS ""Reminders"" (
+            ""Id""        SERIAL PRIMARY KEY,
+            ""Title""     VARCHAR(200) NOT NULL,
+            ""Notes""     TEXT,
+            ""DueAt""     TIMESTAMPTZ,
+            ""Completed"" BOOLEAN NOT NULL DEFAULT FALSE,
+            ""CreatedAt"" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+    ");
 }
 
 app.UseStaticFiles();

@@ -1,5 +1,6 @@
 zerops:
-  - setup: remindersdev
+  # Dev — mutable workspace, idle process; dev server started by harness.
+  - setup: dev
     build:
       base: dotnet@9
       buildCommands:
@@ -18,6 +19,37 @@ zerops:
       start: zsc noop --silent
       envVariables:
         ASPNETCORE_ENVIRONMENT: Development
+        ASPNETCORE_URLS: http://0.0.0.0:8080
+        DB_HOST: ${db_hostname}
+        DB_PORT: ${db_port}
+        DB_NAME: ${db_dbName}
+        DB_USER: ${db_user}
+        DB_PASSWORD: ${db_password}
+
+  # Prod — published artefact, stage container auto-starts on deploy.
+  - setup: prod
+    build:
+      base: dotnet@9
+      buildCommands:
+        - dotnet publish -c Release -o out --no-self-contained
+      deployFiles:
+        - ./out/~
+      cache:
+        - obj
+        - bin
+        - ~/.nuget
+    run:
+      base: dotnet@9
+      ports:
+        - port: 8080
+          httpSupport: true
+      start: dotnet Reminders.dll
+      healthCheck:
+        httpGet:
+          port: 8080
+          path: /health
+      envVariables:
+        ASPNETCORE_ENVIRONMENT: Production
         ASPNETCORE_URLS: http://0.0.0.0:8080
         DB_HOST: ${db_hostname}
         DB_PORT: ${db_port}
