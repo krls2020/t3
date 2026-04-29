@@ -1,0 +1,155 @@
+@page
+@model Reminders.Pages.IndexModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Reminders</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+        :root {
+            --bg: #f5f5f7;
+            --card: #ffffff;
+            --text: #1d1d1f;
+            --muted: #6e6e73;
+            --border: #e5e5ea;
+            --accent: #007aff;
+            --danger: #ff3b30;
+            --done: #34c759;
+            --overdue: #ff453a;
+        }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 32px 16px 64px;
+        }
+        .wrap { max-width: 640px; margin: 0 auto; }
+        h1 { font-size: 32px; letter-spacing: -0.02em; margin: 0 0 4px; }
+        .sub { color: var(--muted); margin: 0 0 24px; font-size: 14px; }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; }
+        form.add { padding: 16px; margin-bottom: 24px; display: grid; gap: 10px; }
+        form.add input, form.add textarea {
+            width: 100%; border: 1px solid var(--border); border-radius: 10px;
+            padding: 10px 12px; font-size: 15px; font-family: inherit;
+            background: #fafafa; outline: none;
+        }
+        form.add input:focus, form.add textarea:focus { border-color: var(--accent); background: #fff; }
+        form.add textarea { min-height: 60px; resize: vertical; }
+        .row { display: flex; gap: 10px; }
+        .row > * { flex: 1; }
+        button {
+            background: var(--accent); color: #fff; border: 0; padding: 11px 20px;
+            font-size: 15px; font-weight: 600; border-radius: 10px; cursor: pointer;
+        }
+        button:hover { opacity: 0.9; }
+        button.secondary { background: transparent; color: var(--accent); padding: 4px 8px; font-weight: 500; font-size: 13px; }
+        button.danger { background: transparent; color: var(--danger); padding: 4px 8px; font-weight: 500; font-size: 13px; }
+        h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 24px 0 8px; font-weight: 600; }
+        ul.list { list-style: none; padding: 0; margin: 0; }
+        ul.list li {
+            padding: 14px 16px; border-bottom: 1px solid var(--border);
+            display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center;
+        }
+        ul.list li:last-child { border-bottom: 0; }
+        .check {
+            width: 22px; height: 22px; border: 2px solid var(--border); border-radius: 50%;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: transparent; cursor: pointer; padding: 0;
+        }
+        .check.done { border-color: var(--done); background: var(--done); color: #fff; }
+        .body .title { font-weight: 500; font-size: 15px; }
+        .body .notes { color: var(--muted); font-size: 13px; margin-top: 2px; }
+        .body .due { font-size: 12px; color: var(--muted); margin-top: 4px; }
+        .body .due.overdue { color: var(--overdue); font-weight: 600; }
+        .done-row .title { color: var(--muted); text-decoration: line-through; }
+        .empty { padding: 24px; text-align: center; color: var(--muted); font-size: 14px; }
+        .actions form { display: inline; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <h1>Reminders</h1>
+    <p class="sub">@Model.Active.Count active · @Model.Done.Count done</p>
+
+    <div class="card">
+        <form class="add" method="post" asp-page-handler="Add">
+            <input asp-for="Title" placeholder="What do you want to remember?" required maxlength="200" autofocus />
+            <textarea asp-for="Notes" placeholder="Notes (optional)"></textarea>
+            <div class="row">
+                <input asp-for="DueAt" type="datetime-local" />
+                <button type="submit">Add reminder</button>
+            </div>
+        </form>
+    </div>
+
+    <h2>Active</h2>
+    <div class="card">
+        @if (!Model.Active.Any())
+        {
+            <div class="empty">Nothing to do. 🎉</div>
+        }
+        else
+        {
+            <ul class="list">
+                @foreach (var r in Model.Active)
+                {
+                    var overdue = r.DueAt.HasValue && r.DueAt.Value < DateTime.UtcNow;
+                    <li>
+                        <form method="post" asp-page-handler="Toggle" asp-route-id="@r.Id">
+                            <button class="check" type="submit" title="Mark complete"></button>
+                        </form>
+                        <div class="body">
+                            <div class="title">@r.Title</div>
+                            @if (!string.IsNullOrEmpty(r.Notes)) { <div class="notes">@r.Notes</div> }
+                            @if (r.DueAt.HasValue)
+                            {
+                                <div class="due @(overdue ? "overdue" : "")">
+                                    @(overdue ? "⚠ Overdue: " : "Due: ")@r.DueAt.Value.ToLocalTime().ToString("ddd, MMM d · HH:mm")
+                                </div>
+                            }
+                        </div>
+                        <div class="actions">
+                            <form method="post" asp-page-handler="Delete" asp-route-id="@r.Id">
+                                <button type="submit" class="danger" title="Delete">Delete</button>
+                            </form>
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+
+    @if (Model.Done.Any())
+    {
+        <h2>Recently completed</h2>
+        <div class="card">
+            <ul class="list">
+                @foreach (var r in Model.Done)
+                {
+                    <li class="done-row">
+                        <form method="post" asp-page-handler="Toggle" asp-route-id="@r.Id">
+                            <button class="check done" type="submit" title="Mark active">✓</button>
+                        </form>
+                        <div class="body">
+                            <div class="title">@r.Title</div>
+                        </div>
+                        <div class="actions">
+                            <form method="post" asp-page-handler="Delete" asp-route-id="@r.Id">
+                                <button type="submit" class="danger">Delete</button>
+                            </form>
+                        </div>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+</div>
+</body>
+</html>

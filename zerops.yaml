@@ -1,0 +1,26 @@
+zerops:
+  - setup: remindersdev
+    build:
+      base: dotnet@9
+      buildCommands:
+        - dotnet restore
+      deployFiles:
+        - ./
+      cache:
+        - obj
+        - bin
+        - ~/.nuget
+    run:
+      base: dotnet@9
+      ports:
+        - port: 8080
+          httpSupport: true
+      start: zsc noop --silent
+      envVariables:
+        ASPNETCORE_ENVIRONMENT: Development
+        ASPNETCORE_URLS: http://0.0.0.0:8080
+        DB_HOST: ${db_hostname}
+        DB_PORT: ${db_port}
+        DB_NAME: ${db_dbName}
+        DB_USER: ${db_user}
+        DB_PASSWORD: ${db_password}
