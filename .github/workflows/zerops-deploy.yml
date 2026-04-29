@@ -1,0 +1,22 @@
+name: Deploy to Zerops stage
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install zcli
+        run: npm i -g @zerops/zcli
+
+      - name: Push to Zerops stage (remindersstage)
+        env:
+          ZEROPS_TOKEN: ${{ secrets.ZEROPS_TOKEN }}
+        run: |
+          zcli login "$ZEROPS_TOKEN"
+          zcli push --serviceId=HvaVlDGmSaaxePb7UpijdQ --setup=prod
